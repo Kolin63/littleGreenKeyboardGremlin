@@ -5,7 +5,6 @@
 #include <fcntl.h>
 #include <cstdlib>
 #include <time.h>
-
 #include "Random.h"
 
 void moveToCoordinate(short x, short y);
@@ -27,7 +26,8 @@ constexpr bool showDebugInfo{ true };
 int gremlinKey{ -1 };
 int pressedKey{ -1 };
 
-std::string word{};
+std::wstring word{L"     "};
+short lettersGot{ 0 };
 
 int main() {
 	// sets to utf8
@@ -103,6 +103,10 @@ char getInput()
 {
 	char input{};
 	input = static_cast<char>(_getch()); // non blocking
+	if (input == '0' || input == '1')
+	{
+		input = '2';
+	}
 
 	char qwerty[] = 
 	{
@@ -126,11 +130,34 @@ char getInput()
 		}
 	}
 
+	if (input == ' ')
+	{
+		input = '1';
+	}
+	else if (gremlinKey == pressedKey && gremlinKey != -1)
+	{
+		word[lettersGot] = input;
+		++lettersGot;
+	}
+
 	return input;
 }
 
 void printKeyboard()
 {
+	moveToCoordinate(keyboardWidth * 5 - 4, keyboardYStart - 3);
+	for (int i{ 0 }; i <= word.length(); ++i)
+	{
+		if (word[i] == 32)
+		{
+			std::wcout << L"_ ";
+		}
+		else
+		{
+			std::wcout << word[i] << ' ';
+		}
+	}
+
 	for (short i{ 0 }; i <= 25; ++i)
 	{
 		const wchar_t qwerty[] = 
