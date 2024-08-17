@@ -29,6 +29,23 @@ constexpr short keyboardXStart{ 0 };
 constexpr short keyboardWidth{ 6 };
 constexpr short keyboardHeight{ 3 };
 
+constexpr int consoleBlack{ 0 };
+constexpr int consoleBlue{ 1 };
+constexpr int consoleGreen{ 2 };
+constexpr int consoleAqua{ 3 };
+constexpr int consoleRed{ 4 };
+constexpr int consolePurple{ 5 };
+constexpr int consoleYellow{ 6 };
+constexpr int consoleWhite{ 7 };
+constexpr int consoleGrey{ 8 };
+constexpr int consoleLightBlue{ 9 };
+constexpr int consoleLightGreen{ 10 };
+constexpr int consoleLightAqua{ 11 };
+constexpr int consoleLightRed{ 12 };
+constexpr int consoleLightPurple{ 13 };
+constexpr int consoleLightYellow{ 14 };
+constexpr int consoleBrightWhite{ 15 };
+
 constexpr int gremlinTimerMax{ 1500 };
 bool runGremlinTimer{ true };
 constexpr int pressedKeyTimerMax{ 175 };
@@ -72,7 +89,7 @@ int main() {
 	// sets to utf8
 	[[maybe_unused]]
 	int sillyReturnValue = _setmode(_fileno(stdout), _O_U8TEXT);
-	setConsoleColor(15, 0);
+	setConsoleColor(consoleBrightWhite, consoleBlack);
 
 	int deltaTime{};
 	int gremlinTimer{ gremlinTimerMax };
@@ -265,6 +282,10 @@ char getInput()
 	{
 		attackWord[attackWordLettersGot] = input;
 		++attackWordLettersGot;
+
+		coins += static_cast<int>(letterValues[pressedKey] / 5);
+		score += static_cast<int>(letterValues[pressedKey] / 5);
+
 		if (attackWordLettersGot == 5)
 		{
 			printKeyboard();
@@ -283,13 +304,14 @@ char getInput()
 				attackWord = L"     ";
 				attackWord[0] = attackWordFirstLetter;
 				attackWordLettersGot = 1;
+				setConsoleColor(consoleLightGreen);
 			}
 			else
 			{
 				keyboardHealth -= 10;
 				zoomedIn = false;
 				runGremlinTimer = true;
-				setConsoleColor(12);
+				setConsoleColor(consoleLightRed);
 				moveToCoordinate(keyboardWidth * 5 - 4, keyboardYStart - 1);
 				for (int i{ 0 }; i <= attackWord.length(); ++i)
 				{
@@ -306,8 +328,8 @@ char getInput()
 
 void printKeyboard()
 {
-	if (zoomedIn) setConsoleColor(8);
-	else setConsoleColor(15);
+	if (zoomedIn) setConsoleColor(consoleGrey);
+	else setConsoleColor(consoleBrightWhite);
 	moveToCoordinate(keyboardWidth * 5 - 4, keyboardYStart - 3);
 	for (int i{ 0 }; i <= word.length(); ++i)
 	{
@@ -322,7 +344,7 @@ void printKeyboard()
 	}
 	if (zoomedIn)
 	{
-		setConsoleColor(15);
+		setConsoleColor(consoleBrightWhite);
 		moveToCoordinate(keyboardWidth * 5 - 4, keyboardYStart - 1);
 		for (int i{ 0 }; i <= attackWord.length(); ++i)
 		{
@@ -346,7 +368,7 @@ void printKeyboard()
 
 	if (zoomedIn)
 	{
-		setConsoleColor(15);
+		setConsoleColor(consoleBrightWhite);
 
 		moveToCoordinate(keyboardXStart + 11, keyboardYStart);
 		std::wcout << L"┌────────────────────────────────────┐";
@@ -398,19 +420,19 @@ void printKeyboard()
 
 		if (i == pressedKey)
 		{
-			setConsoleColor(10); // green
+			setConsoleColor(consoleLightGreen);
 		}
 		else if (i == baitedKey)
 		{
-			setConsoleColor(14); // yellow
+			setConsoleColor(consoleLightYellow); 
 		}
 		else if (i == gremlinKey)
 		{
-			setConsoleColor(12); // red
+			setConsoleColor(consoleLightRed);
 		}
 		else
 		{
-			setConsoleColor(8); // gray
+			setConsoleColor(consoleGrey); 
 		}
 
 
@@ -423,7 +445,7 @@ void printKeyboard()
 		moveToCoordinate(keyboardXOffset, keyboardYOffset + 2);
 		std::wcout << L"└───┘ ";
 
-		setConsoleColor(8); // gray
+		setConsoleColor(consoleGrey); 
 
 		std::wcout.flush();
 	}
@@ -478,12 +500,10 @@ bool checkIfValidWord(std::wstring theWord)
 		if (wwordChecking == theWord)
 		{
 			moveToCoordinate(0, (keyboardHeight + 1) * 3 + 4);
-			setConsoleColor(10);
 			return true;
 		}
 	}
 	moveToCoordinate(0, (keyboardHeight + 1) * 3 + 4);
-	setConsoleColor(12);
 	return false;
 }
 
@@ -521,7 +541,7 @@ wchar_t intToQwertyChar(int x, bool capital)
 
 void printScoreboard()
 {
-	setConsoleColor(15);
+	setConsoleColor(consoleBrightWhite);
 	moveToCoordinate(70, 2);
 	std::wcout << "LITTLE GREEN KEYBOARD GREMLIN";
 	moveToCoordinate(70, 3);
