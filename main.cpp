@@ -15,6 +15,7 @@ char getInput();
 void printKeyboard();
 void spawnGremlin();
 void checkIfValidWord();
+void printMenu();
 std::wstring stringToWString(const std::string& str);
 
 constexpr short keyboardYStart{ 5 };
@@ -35,6 +36,10 @@ std::wstring word{ L"     " };
 short lettersGot{ 0 };
 
 bool gameRunning{ true };
+std::string gameState{ "menu" };
+bool zoomedIn{ false };
+int baitedKey{ -1 };
+int bait{};
 
 int main() {
 	// sets to utf8
@@ -54,10 +59,21 @@ int main() {
 		{
 			input = getInput();
 			debugInput = input;
-			pressedKeyTimer = pressedKeyTimerMax;
-			if (input == '1')
+			if (gameState == "game")
 			{
-				gremlinTimer = 0;
+				pressedKeyTimer = pressedKeyTimerMax;
+				if (input == '1' && gremlinKey != -1)
+				{
+					gremlinKey = -1;
+					runGremlinTimer = false;
+					zoomedIn = true;
+				}
+			}
+			if (gameState == "menu" && input == '1')
+			{
+				moveToCoordinate(0, 0);
+				std::wcout << L"                                                \n                           ";
+				gameState = "game";
 			}
 		}
 		else
@@ -65,40 +81,59 @@ int main() {
 			input = '0';
 		}
 
-		// IF HITTING GREMLIN
-		if (gremlinKey == pressedKey && gremlinKey != -1)
+		if (gameState == "game")
 		{
-			gremlinKey = -1;
-			gremlinTimer = 100;
+			// IF HITTING GREMLIN
+			if (gremlinKey == pressedKey && gremlinKey != -1)
+			{
+				gremlinKey = -1;
+				gremlinTimer = 100;
+			}
+
+			// TIMER STUFF
+			if (gremlinTimer <= 0)
+			{
+				gremlinTimer = gremlinTimerMax;
+				spawnGremlin();
+			}
+			if (pressedKeyTimer <= 0)
+			{
+				pressedKey = -1;
+			}
+
+			printKeyboard();
 		}
 
-		// TIMER STUFF
-		if (gremlinTimer <= 0) 
+		if (gameState == "menu")
 		{
-			gremlinTimer = gremlinTimerMax;
-			spawnGremlin();
+			printMenu();
 		}
-		if (pressedKeyTimer <= 0)
-		{
-			pressedKey = -1;
-		}
-		
-		printKeyboard();
-
 
 		deltaTime = clock() - lastTick;
-		if (runGremlinTimer)
+		if (runGremlinTimer && gameState == "game")
 		{
 			gremlinTimer -= deltaTime;
 		}
-		pressedKeyTimer -= deltaTime;
+		if (gameState == "game")
+		{
+			pressedKeyTimer -= deltaTime;
+		}
 
 		// DEBUG INFO
 		if (showDebugInfo)
 		{
-			moveToCoordinate(0, (keyboardHeight + 1) * 3 + 6);
-			std::wcout << "DEBUG\ninput: " << input << "\ndebugInput: " << debugInput << "\ndeltaTime: " << deltaTime
-			<< "\ngremlinTimer: " << gremlinTimer << "\nlettersGot: " << lettersGot;
+			moveToCoordinate(50, (keyboardHeight + 1) * 3 + 10);
+			std::wcout << "DEBUG";
+			moveToCoordinate(50, (keyboardHeight + 1) * 3 + 11);
+			std::wcout << "input: " << input;
+			moveToCoordinate(50, (keyboardHeight + 1) * 3 + 12);
+			std::wcout << "debugInput : " << debugInput;
+			moveToCoordinate(50, (keyboardHeight + 1) * 3 + 13);
+			std::wcout << "deltaTime : " << deltaTime;
+			moveToCoordinate(50, (keyboardHeight + 1) * 3 + 14);
+			std::wcout << "gremlinTimer: " << gremlinTimer;
+			moveToCoordinate(50, (keyboardHeight + 1) * 3 + 15);
+			std::wcout << "lettersGot: " << lettersGot;
 		}
 
 		std::cout.flush();
@@ -128,6 +163,12 @@ char getInput()
 		'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l',       
 		'z', 'x', 'c', 'v', 'b', 'n', 'm'                   
 	};
+	char qwertyCapital[] =
+	{
+		'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P',
+		'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L',
+		'Z', 'X', 'C', 'V', 'B', 'N', 'M'
+	};
 
 	int qwertyValues[] = 
 	{
@@ -141,6 +182,10 @@ char getInput()
 		{
 			pressedKey = qwertyValues[i];
 			break;
+		}
+		if (input == qwertyCapital[i])
+		{
+			baitedKey = qwertyValues[i];
 		}
 	}
 
@@ -179,14 +224,28 @@ void printKeyboard()
 		}
 	}
 
+	const wchar_t qwerty[] =
+	{
+		'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P',
+		'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L',
+		'Z', 'X', 'C', 'V', 'B', 'N', 'M'
+	};
+
+	if (zoomedIn)
+	{
+		moveToCoordinate(keyboardXStart, keyboardYStart);
+		std::wcout << L"           ┌────────────────────────────────────┐           \n";
+		for (int i{ 0 }; i <= 17; ++i)
+		{
+			std::wcout << L"           │                                    │           \n";
+		}
+		std::wcout << L"           └────────────────────────────────────┘           \n";
+
+		return;
+	}
+
 	for (short i{ 0 }; i <= 25; ++i)
 	{
-		const wchar_t qwerty[] = 
-		{
-			'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P',
-			'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L',
-			'Z', 'X', 'C', 'V', 'B', 'N', 'M'
-		};
 		wchar_t ch{ qwerty[i] };
 
 		short keyboardXOffset{};
@@ -211,6 +270,10 @@ void printKeyboard()
 		if (i == pressedKey)
 		{
 			setConsoleColor(10); // green
+		}
+		else if (i == baitedKey)
+		{
+			setConsoleColor(14); // yellow
 		}
 		else if (i == gremlinKey)
 		{
@@ -244,6 +307,12 @@ void setConsoleColor(int color)
 
 void spawnGremlin()
 {
+	if (baitedKey != -1)
+	{
+		gremlinKey = baitedKey;
+		baitedKey = -1;
+		return;
+	}
 	gremlinKey = Random::get(0, 25);
 }
 
@@ -276,4 +345,10 @@ void checkIfValidWord()
 
 std::wstring stringToWString(const std::string& str) {
 	return std::wstring(str.begin(), str.end());
+}
+
+void printMenu()
+{
+	moveToCoordinate(0, 0);
+	std::wcout << L"Welcome to Little Green Keyboard Gremlin!\nPress [ Space ] to start";
 }
