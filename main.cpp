@@ -320,10 +320,25 @@ void checkIfValidWord()
 {
 	std::fstream file;
 	file.open("validwords.txt", std::ios::in);
-	for (int i{ 0 }; i <= 12946; ++i)
+
+	int startLines[] =
+	{
+		1, 737, 1645, 2565, 3246, 3549, 4144, 4781, 5269,
+		5434, 5636, 6011, 6586, 7279, 7604, 7866, 8723, 8801,
+		9429, 10988, 11804, 11993, 12235, 12646, 12662, 12843, 12946
+	};
+	wchar_t firstChar{ word[0] };
+	int startLine{ startLines[static_cast<int>(firstChar) - 97] - 1 };
+	int endLine{ startLines[static_cast<int>(firstChar) - 96] - 1};
+	
+
+	for (int i{ 0 }; i <= endLine; ++i)
 	{
 		std::string wordChecking;
 		std::getline(file, wordChecking);
+
+		if (i < startLine) continue;
+
 		std::wstring wwordChecking{ stringToWString(wordChecking) };
 		moveToCoordinate(0, (keyboardHeight + 1) * 3 + 3);
 		std::wcout << "wordChecking: " << wwordChecking;
