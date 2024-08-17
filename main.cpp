@@ -16,6 +16,7 @@ void printKeyboard();
 void spawnGremlin();
 void checkIfValidWord();
 void printMenu();
+wchar_t intToQwertyChar(int x, bool capital);
 std::wstring stringToWString(const std::string& str);
 
 constexpr short keyboardYStart{ 5 };
@@ -37,13 +38,22 @@ short lettersGot{ 0 };
 
 bool gameRunning{ true };
 std::string gameState{ "menu" };
+
 bool zoomedIn{ false };
+std::wstring attackWord{ L"     " };
+wchar_t attackWordLettersGot{ 0 };
+wchar_t attackWordFirstLetter{};
+int gremlinMaxHealth{ 100 };
+int gremlinHealth{ gremlinMaxHealth };
+int attackWordsGot{ 0 };
+
 int baitedKey{ -1 };
 int bait{};
 
 int main() {
 	// sets to utf8
-	_setmode(_fileno(stdout), _O_U8TEXT);
+	[[maybe_unused]]
+	int sillyReturnValue = _setmode(_fileno(stdout), _O_U8TEXT);
 
 	int deltaTime{};
 	int gremlinTimer{ gremlinTimerMax };
@@ -64,8 +74,15 @@ int main() {
 				pressedKeyTimer = pressedKeyTimerMax;
 				if (input == '1' && gremlinKey != -1)
 				{
-					gremlinKey = -1;
 					runGremlinTimer = false;
+					attackWordFirstLetter = intToQwertyChar(gremlinKey, false);
+					gremlinKey = -1;
+					attackWordLettersGot = 1;
+					attackWord = L"     ";
+					attackWord[0] = attackWordFirstLetter;
+					gremlinHealth = gremlinMaxHealth;
+					attackWordsGot = 0;
+
 					zoomedIn = true;
 				}
 			}
@@ -122,18 +139,24 @@ int main() {
 		// DEBUG INFO
 		if (showDebugInfo)
 		{
-			moveToCoordinate(50, (keyboardHeight + 1) * 3 + 10);
+			moveToCoordinate(80, 0);
 			std::wcout << "DEBUG";
-			moveToCoordinate(50, (keyboardHeight + 1) * 3 + 11);
+			moveToCoordinate(80, 1);
 			std::wcout << "input: " << input;
-			moveToCoordinate(50, (keyboardHeight + 1) * 3 + 12);
+			moveToCoordinate(80, 2);
 			std::wcout << "debugInput : " << debugInput;
-			moveToCoordinate(50, (keyboardHeight + 1) * 3 + 13);
+			moveToCoordinate(80, 3);
 			std::wcout << "deltaTime : " << deltaTime;
-			moveToCoordinate(50, (keyboardHeight + 1) * 3 + 14);
+			moveToCoordinate(80, 4);
 			std::wcout << "gremlinTimer: " << gremlinTimer;
-			moveToCoordinate(50, (keyboardHeight + 1) * 3 + 15);
+			moveToCoordinate(80, 5);
 			std::wcout << "lettersGot: " << lettersGot;
+			moveToCoordinate(80, 6);
+			std::wcout << "attackWordLettersGot: " << attackWordLettersGot;
+			moveToCoordinate(80, 7);
+			std::wcout << "attackWordFirstLetter: " << attackWordFirstLetter;
+			moveToCoordinate(80, 8);
+			std::wcout << "gremlinKey: " << gremlinKey;
 		}
 
 		std::cout.flush();
@@ -193,7 +216,7 @@ char getInput()
 	{
 		input = '1';
 	}
-	else if (gremlinKey == pressedKey && gremlinKey != -1)
+	else if (gremlinKey == pressedKey && gremlinKey != -1 && !zoomedIn)
 	{
 		word[lettersGot] = input;
 		++lettersGot;
@@ -205,6 +228,18 @@ char getInput()
 			checkIfValidWord();
 		}
 	}
+	else if (zoomedIn)
+	{
+		attackWord[attackWordLettersGot] = input;
+		++attackWordLettersGot;
+		if (attackWordLettersGot == 5)
+		{
+			++attackWordsGot;
+			attackWord = L"     ";
+			attackWord[0] = attackWordFirstLetter;
+			attackWordLettersGot = 1;
+		}
+	}
 
 	return input;
 }
@@ -212,15 +247,17 @@ char getInput()
 void printKeyboard()
 {
 	moveToCoordinate(keyboardWidth * 5 - 4, keyboardYStart - 3);
-	for (int i{ 0 }; i <= word.length(); ++i)
+	std::wstring wordToPrint{ L"     " };
+	wordToPrint = !zoomedIn ? word : attackWord;
+	for (int i{ 0 }; i <= wordToPrint.length(); ++i)
 	{
-		if (word[i] == 32)
+		if (wordToPrint[i] == 32)
 		{
 			std::wcout << L"_ ";
 		}
 		else
 		{
-			std::wcout << word[i] << ' ';
+			std::wcout << wordToPrint[i] << ' ';
 		}
 	}
 
@@ -366,4 +403,26 @@ void printMenu()
 {
 	moveToCoordinate(0, 0);
 	std::wcout << L"Welcome to Little Green Keyboard Gremlin!\nPress [ Space ] to start";
+}
+
+wchar_t intToQwertyChar(int x, bool capital)
+{
+	wchar_t qwerty[] =
+	{
+		'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p',
+		'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l',
+		'z', 'x', 'c', 'v', 'b', 'n', 'm'
+	};
+	wchar_t qwertyCapital[] =
+	{
+		'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P',
+		'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L',
+		'Z', 'X', 'C', 'V', 'B', 'N', 'M'
+	};
+
+	if (!capital)
+	{
+		return qwerty[x];
+	}
+	return qwertyCapital[x];
 }
