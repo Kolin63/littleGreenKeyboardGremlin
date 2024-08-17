@@ -5,6 +5,8 @@
 #include <fcntl.h>
 #include <cstdlib>
 #include <time.h>
+#include <fstream>
+
 #include "Random.h"
 
 void moveToCoordinate(short x, short y);
@@ -12,6 +14,8 @@ void setConsoleColor(int color);
 char getInput();
 void printKeyboard();
 void spawnGremlin();
+void checkIfValidWord();
+std::wstring stringToWString(const std::string& str);
 
 constexpr short keyboardYStart{ 5 };
 constexpr short keyboardXStart{ 0 };
@@ -19,6 +23,7 @@ constexpr short keyboardWidth{ 6 };
 constexpr short keyboardHeight{ 3 };
 
 constexpr int gremlinTimerMax{ 1500 };
+bool runGremlinTimer{ true };
 constexpr int pressedKeyTimerMax{ 175 };
 
 constexpr bool showDebugInfo{ true };
@@ -26,8 +31,10 @@ constexpr bool showDebugInfo{ true };
 int gremlinKey{ -1 };
 int pressedKey{ -1 };
 
-std::wstring word{L"     "};
+std::wstring word{ L"     " };
 short lettersGot{ 0 };
+
+bool gameRunning{ true };
 
 int main() {
 	// sets to utf8
@@ -36,7 +43,7 @@ int main() {
 	int deltaTime{};
 	int gremlinTimer{ gremlinTimerMax };
 	int pressedKeyTimer{ pressedKeyTimerMax };
-	while (true)
+	while (gameRunning)
 	{
 		char input{};
 		char debugInput{};
@@ -48,6 +55,10 @@ int main() {
 			input = getInput();
 			debugInput = input;
 			pressedKeyTimer = pressedKeyTimerMax;
+			if (input == '1')
+			{
+				gremlinTimer = 0;
+			}
 		}
 		else
 		{
@@ -76,15 +87,18 @@ int main() {
 
 
 		deltaTime = clock() - lastTick;
-		gremlinTimer -= deltaTime;
+		if (runGremlinTimer)
+		{
+			gremlinTimer -= deltaTime;
+		}
 		pressedKeyTimer -= deltaTime;
 
 		// DEBUG INFO
 		if (showDebugInfo)
 		{
-			moveToCoordinate(0, (keyboardHeight + 1) * 3 + 3);
+			moveToCoordinate(0, (keyboardHeight + 1) * 3 + 6);
 			std::wcout << "DEBUG\ninput: " << input << "\ndebugInput: " << debugInput << "\ndeltaTime: " << deltaTime
-			<< "\ngremlinTimer: " << gremlinTimer;
+			<< "\ngremlinTimer: " << gremlinTimer << "\nlettersGot: " << lettersGot;
 		}
 
 		std::cout.flush();
@@ -138,6 +152,13 @@ char getInput()
 	{
 		word[lettersGot] = input;
 		++lettersGot;
+		if (lettersGot == 5)
+		{
+			runGremlinTimer = false;
+			gremlinKey = -1;
+			printKeyboard();
+			checkIfValidWord();
+		}
 	}
 
 	return input;
@@ -224,4 +245,35 @@ void setConsoleColor(int color)
 void spawnGremlin()
 {
 	gremlinKey = Random::get(0, 25);
+}
+
+void checkIfValidWord()
+{
+	std::fstream file;
+	file.open("validwords.txt", std::ios::in);
+	for (int i{ 0 }; i <= 12946; ++i)
+	{
+		std::string wordChecking;
+		std::getline(file, wordChecking);
+		std::wstring wwordChecking{ stringToWString(wordChecking) };
+		moveToCoordinate(0, (keyboardHeight + 1) * 3 + 3);
+		std::wcout << "wordChecking: " << wwordChecking;
+		if (wwordChecking == word)
+		{
+			moveToCoordinate(0, (keyboardHeight + 1) * 3 + 4);
+			setConsoleColor(10);
+			std::wcout << L"You Win!";
+			gameRunning = false;
+			return;
+		}
+	}
+	moveToCoordinate(0, (keyboardHeight + 1) * 3 + 4);
+	setConsoleColor(12);
+	std::wcout << L"Invalid Word. You Lose.";
+	gameRunning = false;
+	return;
+}
+
+std::wstring stringToWString(const std::string& str) {
+	return std::wstring(str.begin(), str.end());
 }
