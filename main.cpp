@@ -55,7 +55,7 @@ constexpr int consoleLightPurple{ 13 };
 constexpr int consoleLightYellow{ 14 };
 constexpr int consoleBrightWhite{ 15 };
 
-constexpr int gremlinTimerMaxRef{ 10000 };
+constexpr int gremlinTimerMaxRef{ 5000 };
 int gremlinTimerMax{ gremlinTimerMaxRef };
 bool runGremlinTimer{ true };
 bool gremlinTimerDamage{ false };
@@ -498,8 +498,8 @@ char getInput()
 		word[lettersGot] = input;
 		++lettersGot;
 		
-		coins += letterValues[pressedKey] + (moreCoinsBonus * 4);
-		score += letterValues[pressedKey];
+		coins += static_cast<int>((letterValues[pressedKey] + (moreCoinsBonus * 4)) / 4);
+		score += static_cast<int>((letterValues[pressedKey] + (moreCoinsBonus * 4)) / 4);
 	}
 	if (zoomedIn && input != '1' && input != '0')
 	{
@@ -519,8 +519,8 @@ char getInput()
 		attackWord[attackWordLettersGot] = input;
 		++attackWordLettersGot;
 
-		coins += static_cast<int>((letterValues[pressedKey] + (moreCoinsBonus * 4)) / 5);
-		score += static_cast<int>(letterValues[pressedKey] / 5);
+		coins += static_cast<int>((letterValues[pressedKey] + (moreCoinsBonus * 4)) / 8);
+		score += static_cast<int>(letterValues[pressedKey] / 8);
 
 		if (attackWordLettersGot == 5)
 		{
@@ -552,6 +552,8 @@ char getInput()
 					zoomedIn = false;
 					runGremlinTimer = true;
 					gremlinTimerDamage = false;
+					gremlinTimer = 100;
+					gremlinKey = -1;
 					clearScreen();
 				}
 
@@ -569,6 +571,7 @@ char getInput()
 				gremlinTimerDamage = false;
 				attackWordFirstLetterProtection = true;
 				gremlinKey = -1;
+				gremlinTimer = 100;
 				setConsoleColor(consoleLightRed);
 				moveToCoordinate(keyboardWidth * 5 - 4, keyboardYStart - 1);
 				for (int i{ 0 }; i <= attackWord.length(); ++i)
