@@ -25,6 +25,8 @@ void clearScreen();
 void waitMilliseconds(int x);
 std::wstring stringToWString(const std::string& str);
 void loseState();
+void playAgain();
+void cinematicWrite(std::wstring);
 
 constexpr short keyboardYStart{ 5 };
 constexpr short keyboardXStart{ 0 };
@@ -57,7 +59,7 @@ int gremlinTimer{ 1000 };
 int attackTimer{ 0 };
 int pressedKeyTimer{ 0 };
 
-constexpr bool showDebugInfo{ true };
+constexpr bool showDebugInfo{ false };
 
 int gremlinKey{ -1 };
 int pressedKey{ -1 };
@@ -66,7 +68,7 @@ std::wstring word{ L"     " };
 short lettersGot{ 0 };
 
 bool gameRunning{ true };
-std::string gameState{ "menu" };
+std::string gameState{ "cinematic" };
 
 bool zoomedIn{ false };
 std::wstring attackWord{ L"     " };
@@ -76,11 +78,9 @@ bool attackWordFirstLetterProtection{ true };
 int attackWordsGot{ 0 };
 std::wstring attackWords[3] { L"     ", L"     ", L"     " };
 
-int gremlinMaxHealth{ 100 };
-int gremlinHealth{ gremlinMaxHealth };
-
 int baitedKey{ -1 };
-int bait{ 2 };
+int maxBait{ 3 };
+int bait{ 3 };
 
 int keyboardMaxHealth{ 5 };
 int keyboardHealth{ keyboardMaxHealth };
@@ -99,15 +99,18 @@ int maxMenuItem{};
 
 constexpr int keyboardMaxHealthPrice{ 40 };
 constexpr int healPrice{ 30 };
+constexpr int maxBaitPrice{ 100 };
 constexpr int baitPrice{ 30 };
 constexpr int slowerTimerPrice{ 30 };
 constexpr int moreCoinsPrice{ 40 };
 
-int keyboardMaxHealthBonus{};
 int slowerTimerBonus{};
 int moreCoinsBonus{};
 
-int main() {
+bool wonPrevious{ false };
+
+int main() 
+{
 	// sets to utf8
 	[[maybe_unused]]
 	int sillyReturnValue = _setmode(_fileno(stdout), _O_U8TEXT);
@@ -135,7 +138,6 @@ int main() {
 					attackWordLettersGot = 1;
 					attackWord = L"     ";
 					attackWord[0] = attackWordFirstLetter;
-					gremlinHealth = gremlinMaxHealth;
 					attackWordsGot = 0;
 					attackTimer = gremlinTimerMax * 3;
 					attackWordFirstLetterProtection = true; 
@@ -148,10 +150,15 @@ int main() {
 					zoomedIn = true;
 				}
 
-				if (showDebugInfo && input == '`')
+				if (input == '`')
+				{
+					loseState();
+				}
+
+				if constexpr (showDebugInfo && input == '~')
 				{
 					word = L"crate";
-					coins += 100;
+					coins += 10000;
 					lettersGot = 5;
 				}
 
@@ -173,42 +180,42 @@ int main() {
 					}
 				}
 			}
-			if (gameState == "menu" && input == '1')
+			if (gameState == "menu")
 			{
-				moveToCoordinate(0, 0);
-				clearScreen();
+				maxMenuItem = 2;
+				// hmpk
+				if (input == 'H')
+				{
+					--selectedMenuItem;
+					if (selectedMenuItem < 0) selectedMenuItem = 0;
+					else clearScreen();
+				}
+				if (input == 'P')
+				{
+					++selectedMenuItem;
+					if (selectedMenuItem > maxMenuItem) selectedMenuItem = maxMenuItem;
+					else clearScreen();
+				}
 
-				runGremlinTimer = true;
-				gremlinTimerDamage = false;
-
-				gremlinTimerMax = static_cast<int>((gremlinTimerMax * 0.8) + (slowerTimerBonus * 200));
-
-				gremlinTimer = 1000;
-				attackTimer = 0 ;
-				pressedKeyTimer = 0;
-
-				gremlinKey = -1;
-				pressedKey = -1;
-
-				word = L"     ";
-				lettersGot = 0;
-
-				zoomedIn = false;
-				attackWord = L"     ";
-				attackWordLettersGot = 0;
-				attackWordFirstLetterProtection = true;
-				attackWordsGot = 0;
-
-				gremlinMaxHealth = 100;
-				gremlinHealth = gremlinMaxHealth;
-
-				baitedKey = -1;
-
-				gameRound = 0;
-				coins = 0;
-				score = 0;
-
-				gameState = "game";
+				if (input == '\r')
+				{
+					switch (selectedMenuItem)
+					{
+					case 0:
+						wonPrevious = false;
+						playAgain();
+						break;
+					case 1:
+						gameState = "help";
+						break;
+					case 2:
+						clearScreen();
+						moveToCoordinate(0, 0);
+						setConsoleColor(consoleBrightWhite, consoleBlack);
+						std::wcout << "Thank you for playing Little Green Keyboard Gremlin.";
+						gameRunning = false;
+					}
+				}
 			}
 			if (gameState == "win" && input == '1')
 			{
@@ -222,7 +229,7 @@ int main() {
 			}
 			if (gameState == "shop")
 			{
-				maxMenuItem = 4;
+				maxMenuItem = 6;
 				// hmpk
 				if (input == 'H')
 				{
@@ -240,28 +247,37 @@ int main() {
 					{
 					case 0:
 						if (coins < keyboardMaxHealthPrice) break;
-						++keyboardMaxHealthBonus;
+						++keyboardMaxHealth;
 						coins -= keyboardMaxHealthPrice;
 						break;
 					case 1:
-						if (coins < healPrice) break;
+						if (coins < healPrice || keyboardHealth >= keyboardMaxHealth) break;
 						++keyboardHealth;
 						coins -= healPrice;
 						break;
 					case 2:
-						if (coins < baitPrice) break;
+						if (coins < maxBaitPrice) break;
+						++maxBait;
+						coins -= maxBaitPrice;
+						break;
+					case 3:
+						if (coins < baitPrice || bait >= maxBait) break;
 						++bait;
 						coins -= baitPrice;
 						break;
-					case 3:
+					case 4:
 						if (coins < slowerTimerPrice) break;
 						++slowerTimerBonus;
 						coins -= slowerTimerPrice;
 						break;
-					case 4:
+					case 5:
 						if (coins < moreCoinsPrice) break;
 						++moreCoinsBonus;
 						coins -= moreCoinsPrice;
+						break;
+					case 6:
+						wonPrevious = true;
+						playAgain();
 						break;
 					}
 					clearScreen();
@@ -318,6 +334,10 @@ int main() {
 				clearScreen();
 				attackWordFirstLetterProtection = true;
 			}
+			if (keyboardHealth <= 0)
+			{
+				loseState();
+			}
 
 			printKeyboard();
 			printScoreboard();
@@ -371,13 +391,17 @@ int main() {
 			std::wcout << "gremlinKey: " << gremlinKey;
 			moveToCoordinate(80, 24);
 			std::wcout << "attackWord: " << attackWord;
+			moveToCoordinate(80, 25);
+			std::wcout << "selectedMenuItem: " << selectedMenuItem;
+			moveToCoordinate(80, 26);
+			std::wcout << "gameState: " << stringToWString(gameState);
 		}
 
 		std::cout.flush();
 	}
+
 	return 0;
 }
-
 
 void moveToCoordinate(int x, int y)
 {
@@ -451,7 +475,7 @@ char getInput()
 			attackWordLettersGot -= 1;
 			return 0;
 		}
-		if (input == attackWordFirstLetter && attackWordFirstLetterProtection)
+		if (input == attackWordFirstLetter && attackWordFirstLetterProtection && attackWordLettersGot == 1)
 		{
 			attackWordFirstLetterProtection = false;
 			return input; 
@@ -537,6 +561,9 @@ char getInput()
 
 void printKeyboard()
 {
+	moveToCoordinate(0, 29);
+	std::wcout << "Press ` to quit to menu.";
+
 	if (zoomedIn) setConsoleColor(consoleGrey);
 	else setConsoleColor(consoleBrightWhite);
 	moveToCoordinate(keyboardWidth * 5 - 4, keyboardYStart - 3);
@@ -599,6 +626,14 @@ void printKeyboard()
 		for (int i{ 0 }; i <= 17; ++i)
 		{
 			moveToCoordinate(keyboardXStart + 11, keyboardYStart + i + 1);
+			if (i == 0)
+			{
+				std::wcout << L"│ATTACK WORDS                        │";
+			}
+			if (i >= 1 && i <= 3)
+			{
+				std::wcout << L"│-" << attackWords[i - 1] << L"                              │";
+			}
 			if (i == 9)
 			{
 				std::wcout << L"│                 " << attackWordFirstLetter << L"                  │";
@@ -609,14 +644,6 @@ void printKeyboard()
 		moveToCoordinate(keyboardXStart + 11, keyboardYStart + 19);
 		std::wcout << L"└────────────────────────────────────┘";
 
-		moveToCoordinate(keyboardXStart + 50, keyboardYStart + 0);
-		std::wcout << "ATTACK WORDS";
-		moveToCoordinate(keyboardXStart + 50, keyboardYStart + 1);
-		std::wcout << '-' << attackWords[0];
-		moveToCoordinate(keyboardXStart + 50, keyboardYStart + 2);
-		std::wcout << '-' << attackWords[1];
-		moveToCoordinate(keyboardXStart + 50, keyboardYStart + 3);
-		std::wcout << '-' << attackWords[2];
 		return;
 	}
 
@@ -694,7 +721,7 @@ void printShop()
 
 	if (selectedMenuItem == 0) setConsoleColor(consoleBlack, consoleLightGreen);
 	else setConsoleColor(consoleLightGreen, consoleBlack);
-	std::wcout << "Max Health\t" << keyboardMaxHealthBonus << '\t' << keyboardMaxHealthPrice << '\n';
+	std::wcout << "Max Health\t" << keyboardMaxHealth << '\t' << keyboardMaxHealthPrice << '\n';
 
 	if (selectedMenuItem == 1) setConsoleColor(consoleBlack, consoleLightGreen);
 	else setConsoleColor(consoleLightGreen, consoleBlack);
@@ -702,15 +729,23 @@ void printShop()
 
 	if (selectedMenuItem == 2) setConsoleColor(consoleBlack, consoleLightGreen);
 	else setConsoleColor(consoleLightGreen, consoleBlack);
-	std::wcout << "Bait\t\t" << bait << '\t' << baitPrice << '\n';
+	std::wcout << "Max Bait\t" << maxBait << '\t' << maxBaitPrice << '\n';
 
 	if (selectedMenuItem == 3) setConsoleColor(consoleBlack, consoleLightGreen);
 	else setConsoleColor(consoleLightGreen, consoleBlack);
-	std::wcout << "Slower Timer\t" << slowerTimerBonus << '\t' << slowerTimerPrice << '\n';
+	std::wcout << "Bait\t\t" << bait << '\t' << baitPrice << '\n';
 
 	if (selectedMenuItem == 4) setConsoleColor(consoleBlack, consoleLightGreen);
 	else setConsoleColor(consoleLightGreen, consoleBlack);
+	std::wcout << "Slower Timer\t" << slowerTimerBonus << '\t' << slowerTimerPrice << '\n';
+
+	if (selectedMenuItem == 5) setConsoleColor(consoleBlack, consoleLightGreen);
+	else setConsoleColor(consoleLightGreen, consoleBlack);
 	std::wcout << "More Coins\t" << moreCoinsBonus << '\t' << moreCoinsPrice << '\n';
+
+	if (selectedMenuItem == 6) setConsoleColor(consoleBlack, consoleLightGreen);
+	else setConsoleColor(consoleLightGreen, consoleBlack);
+	std::wcout << "\nPlay Again\n";
 
 	setConsoleColor(consoleLightGreen, consoleBlack);
 	std::wcout << "\nNavigate with Arrows, purchase with Enter.";
@@ -784,11 +819,109 @@ void loseState()
 	std::wcout << "You lose. Press space to try again.";
 }
 
+void playAgain()
+{
+	clearScreen();
+
+	runGremlinTimer = true;
+	gremlinTimerDamage = false;
+
+	if (wonPrevious)
+	{
+		gremlinTimerMax = static_cast<int>((gremlinTimerMax * 0.9) + (slowerTimerBonus * 200));
+		++gameRound;
+	}
+	else
+	{
+		gremlinTimerMax = 3500;
+
+		keyboardMaxHealth = 5;
+		keyboardHealth = 5;
+		maxBait = 3;
+		bait = 3;
+		slowerTimerBonus = 0;
+		moreCoinsBonus = 0;
+
+		coins = 0;
+		score = 0;
+		gameRound = 0;
+	}
+
+	gremlinTimer = 1000;
+	attackTimer = 0;
+	pressedKeyTimer = 0;
+
+	gremlinKey = -1;
+	pressedKey = -1;
+
+	word = L"     ";
+	lettersGot = 0;
+
+	zoomedIn = false;
+	attackWord = L"     ";
+	attackWordLettersGot = 0;
+	attackWordFirstLetterProtection = true;
+	attackWordsGot = 0;
+
+	baitedKey = -1;
+
+	gameState = "game";
+}
+
 void printMenu()
 {
-	setConsoleColor(consoleBrightWhite);
+	setConsoleColor(consoleLightGreen, consoleBlack);
 	moveToCoordinate(0, 0);
-	std::wcout << L"Welcome to Little Green Keyboard Gremlin!\nPress [ Space ] to start\nPress [ H ] for help\nPress [ Q ] to Quit";
+	std::wcout << L"        ╖\n"; 
+	std::wcout << L"██████  ║   ╦ ═╦═ ═╦═ ╖  ╔╗                             \n";
+	std::wcout << L"██   █  ╚══ ╩  ╨   ╨  ╚═ ╚═   ▒                 ▒       \n";
+	std::wcout << L"██     ████  ████ ████ ██   █▒░▒               ▒░▒      \n";
+	std::wcout << L"██  ██ ██ ██ ██▄▄ ██▄▄ ████ █▒░░ ▒▒▒▒▒▒▒▒▒▒▒▒▒ ░░▒      \n";
+	std::wcout << L"██   █ ████  ██▀▀ ██▀▀ ██ ███ ▒░▒   ▀▖    ▗▀  ▒░▒       \n"; 
+	std::wcout << L"██████ ██ ██ ████ ████ ██  ██  ▒   ▗       ▖   ▒        \n";
+	std::wcout << L"                               ▒     ▆▂▂▂▆     ▒        \n";
+	std::wcout << L"▓▓  ▓▓ ▓▓▓▓▓ ▓▓   ▓▓ ▓▓▓▓   ▓▓▓▓   ▓▓▓▓  ▓▓▓▓  ▓▓▓▓     \n";
+	std::wcout << L"▓▓ ▓▓  ▓▓     ▓▓ ▓▓  ▓▓ ▓▓ ▓▓  ▓▓▒▓▓  ▓▓ ▓▓ ▓▓▒▓▓ ▓▓    \n";
+	std::wcout << L"▓▓▓▓   ▓▓▓▓    ▓▓    ▓▓▓▓  ▓▓  ▓▓ ▓▓▓▓▓▓▒▓▓▓▓▒ ▓▓ ▓▓    \n";
+	std::wcout << L"▓▓ ▓▓  ▓▓     ▓▓     ▓▓ ▓▓ ▓▓  ▓▓ ▓▓  ▓▓ ▓▓ ▓▓ ▓▓ ▓▓    \n";
+	std::wcout << L"▓▓  ▓▓ ▓▓▓▓▓ ▓▓      ▓▓▓▓   ▓▓▓▓  ▓▓  ▓▓ ▓▓ ▓▓ ▓▓▓▓     \n";
+	std::wcout << L"                                                        \n";
+	std::wcout << L"▒▒▒▒▒▒ ▒▒▒▒  ▒▒▒▒▒ ▒▒▒▒ ▒▒▒▒ ▒▒    ▒▒▒▒ ▒▒    ▒         \n";
+	std::wcout << L"▒▒     ▒▒ ▒▒ ▒▒    ▒▒ ▒▒  ▒▒ ▒▒     ▒▒  ▒▒▒▒  ▒         \n";
+	std::wcout << L"▒▒ ▒▒▒ ▒▒▒▒  ▒▒▒▒  ▒▒ ▒▒  ▒▒ ▒▒     ▒▒  ▒▒ ▒▒ ▒         \n";
+	std::wcout << L"▒▒  ▒▒ ▒▒ ▒▒ ▒▒    ▒▒     ▒▒ ▒▒     ▒▒  ▒▒  ▒▒▒         \n";
+	std::wcout << L"▒▒▒▒▒▒ ▒▒ ▒▒ ▒▒▒▒▒ ▒▒     ▒▒ ▒▒▒▒▒ ▒▒▒▒ ▒▒   ▒▒         \n";
+	std::wcout << L"                                                        \n";
+
+
+	if (selectedMenuItem == 0)
+	{
+		setConsoleColor(consoleBlack, consoleLightGreen);
+		std::wcout << " >";
+	}
+	else setConsoleColor(consoleLightGreen, consoleBlack);
+	std::wcout << "START GAME\n";
+
+	if (selectedMenuItem == 1)
+	{
+		setConsoleColor(consoleBlack, consoleLightGreen);
+		std::wcout << " >";
+	}
+	else setConsoleColor(consoleLightGreen, consoleBlack);
+	std::wcout << "HELP\n";
+
+	if (selectedMenuItem == 2)
+	{
+		setConsoleColor(consoleBlack, consoleLightGreen);
+		std::wcout << " >";
+	}
+	else setConsoleColor(consoleLightGreen, consoleBlack);
+	std::wcout << "QUIT\n";
+
+	setConsoleColor(consoleLightGreen, consoleBlack);
+	std::wcout << "\n\nNavigate with Arrows and Select with Enter";
+	setConsoleColor(consoleGreen, consoleBlack);
+	std::wcout << "\n\n\n\nMade by Kolin63";
 }
 
 wchar_t intToQwertyChar(int x, bool capital)
@@ -832,7 +965,7 @@ void printScoreboard()
 
 void clearScreen()
 {
-	for (int i{ 0 }; i <= 28; ++i)
+	for (int i{ 0 }; i <= 29; ++i)
 	{
 		for (int j{ 0 }; j <= 120; ++j)
 		{
