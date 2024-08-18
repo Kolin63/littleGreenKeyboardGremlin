@@ -48,7 +48,7 @@ constexpr int consoleLightPurple{ 13 };
 constexpr int consoleLightYellow{ 14 };
 constexpr int consoleBrightWhite{ 15 };
 
-constexpr int gremlinTimerMax{ 3500 };
+int gremlinTimerMax{ 3500 };
 bool runGremlinTimer{ true };
 bool gremlinTimerDamage{ false };
 constexpr int pressedKeyTimerMax{ 175 };
@@ -82,7 +82,8 @@ int gremlinHealth{ gremlinMaxHealth };
 int baitedKey{ -1 };
 int bait{ 2 };
 
-int keyboardHealth{ 100 };
+int keyboardMaxHealth{ 5 };
+int keyboardHealth{ keyboardMaxHealth };
 int gameRound{ 0 };
 int coins{ 0 };
 int score{ 0 };
@@ -95,6 +96,16 @@ int letterValues[26] =
 
 int selectedMenuItem{};
 int maxMenuItem{};
+
+constexpr int keyboardMaxHealthPrice{ 40 };
+constexpr int healPrice{ 30 };
+constexpr int baitPrice{ 30 };
+constexpr int slowerTimerPrice{ 30 };
+constexpr int moreCoinsPrice{ 40 };
+
+int keyboardMaxHealthBonus{};
+int slowerTimerBonus{};
+int moreCoinsBonus{};
 
 int main() {
 	// sets to utf8
@@ -140,6 +151,7 @@ int main() {
 				if (showDebugInfo && input == '`')
 				{
 					word = L"crate";
+					coins += 100;
 					lettersGot = 5;
 				}
 
@@ -169,7 +181,9 @@ int main() {
 				runGremlinTimer = true;
 				gremlinTimerDamage = false;
 
-				gremlinTimer = 1000 ;
+				gremlinTimerMax = static_cast<int>((gremlinTimerMax * 0.8) + (slowerTimerBonus * 200));
+
+				gremlinTimer = 1000;
 				attackTimer = 0 ;
 				pressedKeyTimer = 0;
 
@@ -189,9 +203,7 @@ int main() {
 				gremlinHealth = gremlinMaxHealth;
 
 				baitedKey = -1;
-				bait = 2;
 
-				keyboardHealth = 100;
 				gameRound = 0;
 				coins = 0;
 				score = 0;
@@ -210,17 +222,49 @@ int main() {
 			}
 			if (gameState == "shop")
 			{
-				maxMenuItem = 5;
+				maxMenuItem = 4;
 				// hmpk
 				if (input == 'H')
 				{
 					--selectedMenuItem;
-					if (selectedMenuItem < 0) selectedMenuItem = 1;
+					if (selectedMenuItem < 0) selectedMenuItem = 0;
 				}
 				if (input == 'P')
 				{
 					++selectedMenuItem;
 					if (selectedMenuItem > maxMenuItem) selectedMenuItem = maxMenuItem; 
+				}
+				if (input == '\r')
+				{
+					switch (selectedMenuItem)
+					{
+					case 0:
+						if (coins < keyboardMaxHealthPrice) break;
+						++keyboardMaxHealthBonus;
+						coins -= keyboardMaxHealthPrice;
+						break;
+					case 1:
+						if (coins < healPrice) break;
+						++keyboardHealth;
+						coins -= healPrice;
+						break;
+					case 2:
+						if (coins < baitPrice) break;
+						++bait;
+						coins -= baitPrice;
+						break;
+					case 3:
+						if (coins < slowerTimerPrice) break;
+						++slowerTimerBonus;
+						coins -= slowerTimerPrice;
+						break;
+					case 4:
+						if (coins < moreCoinsPrice) break;
+						++moreCoinsBonus;
+						coins -= moreCoinsPrice;
+						break;
+					}
+					clearScreen();
 				}
 			}
 		}
@@ -244,7 +288,7 @@ int main() {
 			{
 				if (gremlinTimerDamage)
 				{
-					keyboardHealth -= 20;
+					keyboardHealth -= 2;
 				}
 				else
 				{
@@ -259,7 +303,7 @@ int main() {
 			}
 			if (attackTimer <= 0 && zoomedIn)
 			{
-				keyboardHealth -= 10;
+				keyboardHealth -= 1;
 				zoomedIn = false;
 				runGremlinTimer = true;
 				gremlinTimerDamage = false;
@@ -306,6 +350,7 @@ int main() {
 		// DEBUG INFO
 		if (showDebugInfo)
 		{
+			setConsoleColor(consoleBrightWhite, consoleBlack);
 			moveToCoordinate(80, 15);
 			std::wcout << "DEBUG";
 			moveToCoordinate(80, 16);
@@ -369,13 +414,14 @@ char getInput()
 		19, 20, 21, 22, 23, 24, 25   
 	};
 
-	for (int i{ 0 }; i <= 25; ++i) {
+	for (int i{ 0 }; i <= 25; ++i) 
+	{
 		if (input == qwerty[i])
 		{
 			pressedKey = qwertyValues[i];
 			break;
 		}
-		if (input == qwertyCapital[i] && bait > 0)
+		if (input == qwertyCapital[i] && bait > 0 && gameState == "game")
 		{
 			--bait;
 			baitedKey = qwertyValues[i];
@@ -392,7 +438,7 @@ char getInput()
 		word[lettersGot] = input;
 		++lettersGot;
 		
-		coins += letterValues[pressedKey];
+		coins += letterValues[pressedKey] + (moreCoinsBonus * 4);
 		score += letterValues[pressedKey];
 	}
 	if (zoomedIn && input != '1' && input != '0')
@@ -413,7 +459,7 @@ char getInput()
 		attackWord[attackWordLettersGot] = input;
 		++attackWordLettersGot;
 
-		coins += static_cast<int>(letterValues[pressedKey] / 5);
+		coins += static_cast<int>((letterValues[pressedKey] + (moreCoinsBonus * 4)) / 5);
 		score += static_cast<int>(letterValues[pressedKey] / 5);
 
 		if (attackWordLettersGot == 5)
@@ -457,7 +503,7 @@ char getInput()
 			}
 			else
 			{
-				keyboardHealth -= 10;
+				keyboardHealth -= 1;
 				zoomedIn = false;
 				runGremlinTimer = true;
 				gremlinTimerDamage = false;
@@ -641,7 +687,33 @@ void printKeyboard()
 void printShop()
 {
 	moveToCoordinate(0, 0);
-	std::wcout << "SHOP";
+	setConsoleColor(consoleLightGreen, consoleBlack);
+
+	std::wcout << L"SHOP\t\t\tCoins: " << coins << "\n\n";
+	std::wcout << L"Item / Upgrade\tOwned\tPrice\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+
+	if (selectedMenuItem == 0) setConsoleColor(consoleBlack, consoleLightGreen);
+	else setConsoleColor(consoleLightGreen, consoleBlack);
+	std::wcout << "Max Health\t" << keyboardMaxHealthBonus << '\t' << keyboardMaxHealthPrice << '\n';
+
+	if (selectedMenuItem == 1) setConsoleColor(consoleBlack, consoleLightGreen);
+	else setConsoleColor(consoleLightGreen, consoleBlack);
+	std::wcout << "Heal\t\t" << keyboardHealth << '\t' << healPrice << '\n';
+
+	if (selectedMenuItem == 2) setConsoleColor(consoleBlack, consoleLightGreen);
+	else setConsoleColor(consoleLightGreen, consoleBlack);
+	std::wcout << "Bait\t\t" << bait << '\t' << baitPrice << '\n';
+
+	if (selectedMenuItem == 3) setConsoleColor(consoleBlack, consoleLightGreen);
+	else setConsoleColor(consoleLightGreen, consoleBlack);
+	std::wcout << "Slower Timer\t" << slowerTimerBonus << '\t' << slowerTimerPrice << '\n';
+
+	if (selectedMenuItem == 4) setConsoleColor(consoleBlack, consoleLightGreen);
+	else setConsoleColor(consoleLightGreen, consoleBlack);
+	std::wcout << "More Coins\t" << moreCoinsBonus << '\t' << moreCoinsPrice << '\n';
+
+	setConsoleColor(consoleLightGreen, consoleBlack);
+	std::wcout << "\nNavigate with Arrows, purchase with Enter.";
 }
 
 void setConsoleColor(int color)
