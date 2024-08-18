@@ -10,23 +10,27 @@
 
 #include "Random.h"
 
+void printKeyboard();
+void printShop();
+void printMenu();
+void printScoreboard();
+void printCinematic();
+void clearScreen();
+
 void moveToCoordinate(int x, int y);
 void setConsoleColor(int color);
 void setConsoleColor(int color, int backgroundColor);
 char getInput();
-void printKeyboard();
-void printShop();
-void spawnGremlin();
-bool checkIfValidWord(std::wstring theWord);
-void printMenu();
-wchar_t intToQwertyChar(int x, bool capital);
-void printScoreboard();
-void clearScreen();
 void waitMilliseconds(int x);
+void cinematicWrite(std::wstring text, int xLeft = 0, int startY = 0);
+
+bool checkIfValidWord(std::wstring theWord);
+wchar_t intToQwertyChar(int x, bool capital);
 std::wstring stringToWString(const std::string& str);
+
+void spawnGremlin();
 void loseState();
 void playAgain();
-void cinematicWrite(std::wstring);
 
 constexpr short keyboardYStart{ 5 };
 constexpr short keyboardXStart{ 0 };
@@ -94,7 +98,7 @@ int letterValues[26] =
 	20, 20, 18, 20, 19, 14, 18
 };
 
-int selectedMenuItem{};
+int selectedMenuItem{ 0 };
 int maxMenuItem{};
 
 constexpr int keyboardMaxHealthPrice{ 40 };
@@ -173,6 +177,7 @@ int main()
 						moveToCoordinate(keyboardWidth * 5 - 17, keyboardYStart - 2);
 						setConsoleColor(consoleLightGreen);
 						std::wcout << L"You win! Press space to continue.";
+						selectedMenuItem = 0;
 					}
 					else
 					{
@@ -353,6 +358,24 @@ int main()
 			printShop();
 		}
 
+		if (gameState == "cinematic")
+		{
+			maxMenuItem = 100;
+			if (input == '1' && selectedMenuItem < maxMenuItem)
+			{
+				++selectedMenuItem;
+			}
+			if (selectedMenuItem == maxMenuItem)
+			{
+				clearScreen();
+				gameState = "menu";
+			}
+			if (input == '\r' && selectedMenuItem == 1)
+			{
+				selectedMenuItem = 4;
+			}
+		}
+
 		deltaTime = clock() - lastTick;
 		if (runGremlinTimer && gameState == "game")
 		{
@@ -365,6 +388,10 @@ int main()
 		if (zoomedIn && gameState == "game")
 		{
 			attackTimer -= deltaTime;
+		}
+		if (gameState == "cinematic")
+		{
+			printCinematic();
 		}
 
 		// DEBUG INFO
@@ -967,7 +994,7 @@ void clearScreen()
 {
 	for (int i{ 0 }; i <= 29; ++i)
 	{
-		for (int j{ 0 }; j <= 120; ++j)
+		for (int j{ 0 }; j <= 119; ++j)
 		{
 			moveToCoordinate(j, i);
 			std::wcout << ' ';
@@ -975,7 +1002,105 @@ void clearScreen()
 	}
 }
 
+void printCinematic()
+{
+	if (selectedMenuItem == 0)
+	{
+		moveToCoordinate(25, 15);
+		setConsoleColor(consoleLightGreen, consoleBlack);
+		std::wcout << "Please press Space, then resize your window until the frame fits inside.";
+	}
+	if (selectedMenuItem == 1)
+	{
+		for (int i{ 0 }; i <= 29; ++i)
+		{
+			for (int j{ 0 }; j <= 119; ++j)
+			{
+				moveToCoordinate(j, i);
+				if (i == 0 || i == 29 || j == 0 || j == 119)
+				{
+					std::wcout << '#';
+					continue;
+				}
+				if (j == 46 && i == 14)
+				{
+					std::wcout << "    Press Space to continue.     ";
+					continue;
+				}
+				if (j == 46 && i == 15)
+				{
+					std::wcout << "Or Press Enter to skip Cinematic.";
+					continue;
+				}
+				if ((i == 14 || i == 15) && j >= 47 && j <= 79)
+				{
+					continue;
+				}
+				std::wcout << ' ';
+			}
+		}
+		waitMilliseconds(500);
+		system("CLS");
+	}
+	if (selectedMenuItem == 2)
+	{
+		moveToCoordinate(0, 0);
+		std::wcout << "########################################\n";
+		std::wcout << "#                                      #\n";
+		std::wcout << "# ####=                            =#= #\n";
+		std::wcout << "# ########       . .          ######## #\n";
+		std::wcout << "# ########## :=+#%@@@%#+=   ########## #\n";
+		std::wcout << "#  ############%%@@@@%%%@@%*#########  #\n";
+		std::wcout << "#   #######%%@@@@@@%##@@@@@@@##**###   #\n";
+		std::wcout << "#   +##@@@@%#:::#%#::::##%%@%###       #\n";
+		std::wcout << "#    #@@@#: ###:::### ::#@@%+          #\n";
+		std::wcout << "#    #@@@## +%+ =* *%= +#@@@%-         #\n";
+		std::wcout << "#   :%@@@%##: :####- :##@@@@%*         #\n";
+		std::wcout << "#   *#%@%@@@###....%##@%@@@@%*         #\n";
+		std::wcout << "#  :##%#%#%@@@@%%%%%@@@@@%@@%#         #\n";
+		std::wcout << "#  :##%#@%#%@@@@@%@@@@@@%#%@%#-        #\n";
+		std::wcout << "#   #%%@@%@%@@@@@%@@@@%@@@%%@%.        #\n";
+		std::wcout << "#   +%@%%@%#%%@@@@@@%%%%%%@@%#         #\n";
+		std::wcout << "#    #%@@@@%%%%%%@%%%%%%%%%@#=         #\n";
+		std::wcout << "#    +%@%%##%%%%@@@@%@@@%%%%*          #\n";
+		std::wcout << "#     %%@%@@%%%@%%@%%%%%@@@#           #\n";
+		std::wcout << "#     =#####%%@@@@@@@#######           #\n";
+		std::wcout << "#     .#########***-.######.           #\n";
+		std::wcout << "#                                      #\n";
+		std::wcout << "########################################\n";	
+
+		cinematicWrite(L"2042 AD ...\n20 years ago, a newly evolved species of Green Gremlins started \nrebellious gangs and have risen to a significant threat level. \nTheir rein stretched over the entire world, and civilization\ncollapsed under their control.", 45, 0);
+		cinematicWrite(L"In an attempt to stop them, a group of scientists developed an advanced\nformula: GREmical. Theoretically, this would cause\nthe Gremlins to spontaneously combust.", 45, 6);
+		cinematicWrite(L"However, an oversight caused them to not combust, but to shrink\nto a microscopic scale. Although this did cause their corrupt government\nsystem to collapse, they continued to torment humanity.", 45, 10);
+		cinematicWrite(L"Their primary method of doing this is to sneak into keyboards and\ndisrupt our exchange of information. If this lasted, all scientific and\ntechnological growth would halt in its tracks.", 45, 14);
+		cinematicWrite(L"Your mission is this:\nTo bravely traverse our keyboards, and abolish any Gremlins inside them.\nHowever, it is never that simple. Our communications will be active,\nand can not, for any reason, be turned off.\nYou need to make sure that every word you type while\nsmashing the Gremlins is a real one.\n\nGood Luck. You'll need it.\n\nPress Space to Continue.", 45, 18);
+		selectedMenuItem = 3;
+	}
+	if (selectedMenuItem == 4)
+	{
+		gameState = "menu";
+		clearScreen();
+		selectedMenuItem = 0;
+	}
+}
+
 void waitMilliseconds(int x)
 {
 	std::this_thread::sleep_for(std::chrono::milliseconds(x));
+}
+
+void cinematicWrite(std::wstring text, int xLeft, int startY)
+{
+	int currentY{ startY };
+	moveToCoordinate(xLeft, startY);
+	for (int i{ 0 }; i <= text.length(); ++i)
+	{
+		std::wcout << text[i];
+		if (text[i] == '\n')
+		{
+			++currentY;
+			moveToCoordinate(xLeft, currentY);
+		}
+		waitMilliseconds(20);
+	}
 }
