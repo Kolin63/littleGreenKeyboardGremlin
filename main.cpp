@@ -15,6 +15,7 @@ void printShop();
 void printMenu();
 void printScoreboard();
 void printCinematic();
+void printHelp();
 void clearScreen();
 
 void moveToCoordinate(int x, int y);
@@ -54,7 +55,8 @@ constexpr int consoleLightPurple{ 13 };
 constexpr int consoleLightYellow{ 14 };
 constexpr int consoleBrightWhite{ 15 };
 
-int gremlinTimerMax{ 3500 };
+constexpr int gremlinTimerMaxRef{ 10000 };
+int gremlinTimerMax{ gremlinTimerMaxRef };
 bool runGremlinTimer{ true };
 bool gremlinTimerDamage{ false };
 constexpr int pressedKeyTimerMax{ 175 };
@@ -211,13 +213,10 @@ int main()
 						playAgain();
 						break;
 					case 1:
+						clearScreen();
 						gameState = "help";
 						break;
 					case 2:
-						clearScreen();
-						moveToCoordinate(0, 0);
-						setConsoleColor(consoleBrightWhite, consoleBlack);
-						std::wcout << "Thank you for playing Little Green Keyboard Gremlin.";
 						gameRunning = false;
 					}
 				}
@@ -287,6 +286,11 @@ int main()
 					}
 					clearScreen();
 				}
+			}
+			if (gameState == "help" && input == '1')
+			{
+				gameState = "menu";
+				clearScreen();
 			}
 		}
 		else
@@ -374,6 +378,11 @@ int main()
 			{
 				selectedMenuItem = 4;
 			}
+		}
+
+		if (gameState == "help")
+		{
+			printHelp();
 		}
 
 		deltaTime = clock() - lastTick;
@@ -588,9 +597,6 @@ char getInput()
 
 void printKeyboard()
 {
-	moveToCoordinate(0, 29);
-	std::wcout << "Press ` to quit to menu.";
-
 	if (zoomedIn) setConsoleColor(consoleGrey);
 	else setConsoleColor(consoleBrightWhite);
 	moveToCoordinate(keyboardWidth * 5 - 4, keyboardYStart - 3);
@@ -656,10 +662,12 @@ void printKeyboard()
 			if (i == 0)
 			{
 				std::wcout << L"│ATTACK WORDS                        │";
+				continue;
 			}
 			if (i >= 1 && i <= 3)
 			{
 				std::wcout << L"│-" << attackWords[i - 1] << L"                              │";
+				continue;
 			}
 			if (i == 9)
 			{
@@ -860,7 +868,7 @@ void playAgain()
 	}
 	else
 	{
-		gremlinTimerMax = 3500;
+		gremlinTimerMax = gremlinTimerMaxRef;
 
 		keyboardMaxHealth = 5;
 		keyboardHealth = 5;
@@ -975,19 +983,31 @@ wchar_t intToQwertyChar(int x, bool capital)
 
 void printScoreboard()
 {
-	setConsoleColor(consoleBrightWhite);
+	setConsoleColor(consoleLightGreen, consoleBlack);
 	moveToCoordinate(70, 2);
 	std::wcout << "LITTLE GREEN KEYBOARD GREMLIN";
 	moveToCoordinate(70, 3);
-	std::wcout << "Keyboard Health.." << keyboardHealth << "   ";
+	std::wcout << "Keyboard Health....." << keyboardHealth << "   ";
 	moveToCoordinate(70, 4);
-	std::wcout << "Bait............." << bait << "   ";
+	std::wcout << "Bait................" << bait << "   ";
 	moveToCoordinate(70, 5);
-	std::wcout << "Coins............" << coins << "   ";
+	std::wcout << "Coins..............." << coins << "   ";
 	moveToCoordinate(70, 6);
-	std::wcout << "Score............" << score << "   ";
+	std::wcout << "Score..............." << score << "   ";
 	moveToCoordinate(70, 7);
-	std::wcout << "Round............" << gameRound << "   ";
+	std::wcout << "Round..............." << gameRound << "   ";
+
+	// controls
+	moveToCoordinate(70, 15);
+	std::wcout << "HELP..................................";
+	moveToCoordinate(70, 16);
+	std::wcout << "Letter..............Use Letter in Word";
+	moveToCoordinate(70, 17);
+	std::wcout << "SHIFT + Letter......Place Bait";
+	moveToCoordinate(70, 18);
+	std::wcout << "SPACE...............Attempt Skip Key";
+	moveToCoordinate(70, 19);
+	std::wcout << "GRAVE (`)...........Exit to Menu";
 }
 
 void clearScreen()
@@ -1082,6 +1102,40 @@ void printCinematic()
 		clearScreen();
 		selectedMenuItem = 0;
 	}
+}
+
+void printHelp()
+{
+	moveToCoordinate(0, 0);
+	setConsoleColor(consoleLightGreen, consoleBlack);
+	std::wcout << "---OVERVIEW------------------------------------------------------------------------------------------------------------\n";
+	std::wcout << "When you enter the game, you will see a to-scale replica of your keyboard. When a Gremlin runs under a key, the key    \n";
+	std::wcout << "will turn red. You will have a limited amount of time to decide whether to press the key, forcing the Gremlin to run to\n";
+	std::wcout << "a different one, or you can press space and try to skip that key.                                                      \n";
+	std::wcout << "                                                                                                                       \n";
+	std::wcout << "---USING THE LETTER----------------------------------------------------------------------------------------------------\n";
+	std::wcout << "If you simply press the key that the Gremlin is on, the respective letter will be added to your word (displayed at the \n";
+	std::wcout << "top of the window.) Doing this means commiting to have that letter in that spot of your word for the round. By the end \n";
+	std::wcout << "of the round, all five letters must make a real English word (which is decided by Wordle's word list.)                 \n";
+	std::wcout << "                                                                                                                       \n";
+	std::wcout << "---SKIPPING THE LETTER-------------------------------------------------------------------------------------------------\n";
+	std::wcout << "However, it very commonly occurs that the Gremlin will run to a key that can't possibly work with your other letters.  \n";
+	std::wcout << "That is why you have the option to press space, and try to get the Gremlin off that key. To skip the letter,           \n";
+	std::wcout << "you must type three 5-letter words starting with the letter of the key that you are targeting. If you do this          \n";
+	std::wcout << "succesfully, the Gremlin will move to another key. If you don't, the Gremlin will still move but you will be damaged.  \n";
+	std::wcout << "                                                                                                                       \n";
+	std::wcout << "---BAIT----------------------------------------------------------------------------------------------------------------\n";
+	std::wcout << "You start the game with 3 pieces of bait. By holding SHIFT and pressing a key, you place bait on that key. This won't  \n";
+	std::wcout << "cause the Gremlin to run to that key immediately, but it will run there the next time it switches keys.                \n";
+	std::wcout << "                                                                                                                       \n";
+	std::wcout << "---STORE---------------------------------------------------------------------------------------------------------------\n";
+	std::wcout << "Throughout the game, you will gain coins. You get coins from using letters, and you get more depending on how rare the \n";
+	std::wcout << "letter is. If you succesfully type out a valid word, you will win the round and be taken to the store. There, you can  \n";
+	std::wcout << "buy upgrades that will be active until you die. Once you die, all of your stats are reset to the default.              \n";
+	std::wcout << "                                                                                                                       \n";
+	std::wcout << "                                                                                                                       \n";
+	std::wcout << "                                                                                                                       \n";
+	std::wcout << "Press Space to return to the menu.                                                                                     \n";
 }
 
 void waitMilliseconds(int x)
