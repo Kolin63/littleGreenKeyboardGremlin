@@ -19,6 +19,7 @@ void printHelp();
 void clearScreen();
 
 void moveToCoordinate(int x, int y);
+void hideCursor();
 void setConsoleColor(int color);
 void setConsoleColor(int color, int backgroundColor);
 char getInput();
@@ -117,6 +118,7 @@ bool wonPrevious{ false };
 
 int main() 
 {
+	hideCursor();
 	// sets to utf8
 	[[maybe_unused]]
 	int sillyReturnValue = _setmode(_fileno(stdout), _O_U8TEXT);
@@ -292,6 +294,19 @@ int main()
 				gameState = "menu";
 				clearScreen();
 			}
+			if (gameState == "cinematic")
+			{
+				maxMenuItem = 4;
+				if (input == '1' && selectedMenuItem < maxMenuItem)
+				{
+					++selectedMenuItem;
+					clearScreen();
+				}
+				if (input == '\r' && selectedMenuItem == 1)
+				{
+					selectedMenuItem = 4;
+				}
+			}
 		}
 		else
 		{
@@ -360,24 +375,6 @@ int main()
 		if (gameState == "shop")
 		{
 			printShop();
-		}
-
-		if (gameState == "cinematic")
-		{
-			maxMenuItem = 100;
-			if (input == '1' && selectedMenuItem < maxMenuItem)
-			{
-				++selectedMenuItem;
-			}
-			if (selectedMenuItem == maxMenuItem)
-			{
-				clearScreen();
-				gameState = "menu";
-			}
-			if (input == '\r' && selectedMenuItem == 1)
-			{
-				selectedMenuItem = 4;
-			}
 		}
 
 		if (gameState == "help")
@@ -617,7 +614,7 @@ void printKeyboard()
 	if (zoomedIn)
 	{
 		setConsoleColor(consoleBrightWhite);
-		moveToCoordinate(keyboardWidth * 5 - 4, keyboardYStart - 1);
+		moveToCoordinate(keyboardWidth * 5 - 4, keyboardYStart + 2);
 		for (int i{ 0 }; i <= attackWord.length(); ++i)
 		{
 			if (attackWord[i] == 32)
@@ -662,14 +659,22 @@ void printKeyboard()
 		for (int i{ 0 }; i <= 17; ++i)
 		{
 			moveToCoordinate(keyboardXStart + 11, keyboardYStart + i + 1);
-			if (i == 0)
+			if (i == 1)
+			{
+				//std::wcout << L"│              x x x x x             │";
+				std::wcout << L"│              ";
+				moveToCoordinate(keyboardXStart + 35, keyboardYStart + i + 1);
+				std::wcout << L"             │";
+				continue;
+			}
+			if (i == 3)
 			{
 				std::wcout << L"│ATTACK WORDS                        │";
 				continue;
 			}
-			if (i >= 1 && i <= 3)
+			if (i >= 4 && i <= 6)
 			{
-				std::wcout << L"│-" << attackWords[i - 1] << L"                              │";
+				std::wcout << L"│-" << attackWords[i - 4] << L"                              │";
 				continue;
 			}
 			if (i == 9)
@@ -855,6 +860,11 @@ void loseState()
 	moveToCoordinate(keyboardWidth * 5 - 17, keyboardYStart - 2);
 	setConsoleColor(consoleLightRed);
 	std::wcout << "You lose. Press space to try again.";
+	if (bait == maxBait)
+	{
+		moveToCoordinate(keyboardWidth * 5 - 17, keyboardYStart - 1);
+		std::wcout << "Remember to use bait!  SHIFT+Letter";
+	}
 }
 
 void playAgain()
@@ -912,10 +922,10 @@ void printMenu()
 	moveToCoordinate(0, 0);
 	std::wcout << L"        ╖\n"; 
 	std::wcout << L"██████  ║   ╦ ═╦═ ═╦═ ╖  ╔╗                             \n";
-	std::wcout << L"██   █  ╚══ ╩  ╨   ╨  ╚═ ╚═   ▒                 ▒       \n";
-	std::wcout << L"██     ████  ████ ████ ██   █▒░▒               ▒░▒      \n";
-	std::wcout << L"██  ██ ██ ██ ██▄▄ ██▄▄ ████ █▒░░ ▒▒▒▒▒▒▒▒▒▒▒▒▒ ░░▒      \n";
-	std::wcout << L"██   █ ████  ██▀▀ ██▀▀ ██ ███ ▒░▒   ▀▖    ▗▀  ▒░▒       \n"; 
+	std::wcout << L"██   █  ╚══ ╩  ╨   ╨  ╚═ ╚═   ▒                 ▒               Navigate with Arrows and Select with Enter\n";
+	std::wcout << L"██     ████  ████ ████ ██   █▒░▒               ▒░▒                                                        \n";
+	std::wcout << L"██  ██ ██ ██ ██▄▄ ██▄▄ ████ █▒░░ ▒▒▒▒▒▒▒▒▒▒▒▒▒ ░░▒                 The Help menu is highly recommended    \n";
+	std::wcout << L"██   █ ████  ██▀▀ ██▀▀ ██ ███ ▒░▒   ▀▖    ▗▀  ▒░▒                             for new players             \n"; 
 	std::wcout << L"██████ ██ ██ ████ ████ ██  ██  ▒   ▗       ▖   ▒        \n";
 	std::wcout << L"                               ▒     ▆▂▂▂▆     ▒        \n";
 	std::wcout << L"▓▓  ▓▓ ▓▓▓▓▓ ▓▓   ▓▓ ▓▓▓▓   ▓▓▓▓   ▓▓▓▓  ▓▓▓▓  ▓▓▓▓     \n";
@@ -930,12 +940,13 @@ void printMenu()
 	std::wcout << L"▒▒  ▒▒ ▒▒ ▒▒ ▒▒    ▒▒     ▒▒ ▒▒     ▒▒  ▒▒  ▒▒▒         \n";
 	std::wcout << L"▒▒▒▒▒▒ ▒▒ ▒▒ ▒▒▒▒▒ ▒▒     ▒▒ ▒▒▒▒▒ ▒▒▒▒ ▒▒   ▒▒         \n";
 	std::wcout << L"                                                        \n";
+	std::wcout << L"                                                        \n";
 
 
 	if (selectedMenuItem == 0)
 	{
 		setConsoleColor(consoleBlack, consoleLightGreen);
-		std::wcout << " >";
+		std::wcout << "   >";
 	}
 	else setConsoleColor(consoleLightGreen, consoleBlack);
 	std::wcout << "START GAME\n";
@@ -943,7 +954,7 @@ void printMenu()
 	if (selectedMenuItem == 1)
 	{
 		setConsoleColor(consoleBlack, consoleLightGreen);
-		std::wcout << " >";
+		std::wcout << "   >";
 	}
 	else setConsoleColor(consoleLightGreen, consoleBlack);
 	std::wcout << "HELP\n";
@@ -951,15 +962,13 @@ void printMenu()
 	if (selectedMenuItem == 2)
 	{
 		setConsoleColor(consoleBlack, consoleLightGreen);
-		std::wcout << " >";
+		std::wcout << "   >";
 	}
 	else setConsoleColor(consoleLightGreen, consoleBlack);
 	std::wcout << "QUIT\n";
 
-	setConsoleColor(consoleLightGreen, consoleBlack);
-	std::wcout << "\n\nNavigate with Arrows and Select with Enter";
 	setConsoleColor(consoleGreen, consoleBlack);
-	std::wcout << "\n\n\n\nMade by Kolin63";
+	std::wcout << "\n\n\n\n\nMade by Kolin63";
 }
 
 wchar_t intToQwertyChar(int x, bool capital)
@@ -1099,7 +1108,7 @@ void printCinematic()
 		cinematicWrite(L"Your mission is this:\nTo bravely traverse our keyboards, and abolish any Gremlins inside them.\nHowever, it is never that simple. Our communications will be active,\nand can not, for any reason, be turned off.\nYou need to make sure that every word you type while\nsmashing the Gremlins is a real one.\n\nGood Luck. You'll need it.\n\nPress Space to Continue.", 45, 18);
 		selectedMenuItem = 3;
 	}
-	if (selectedMenuItem == 4)
+	if (selectedMenuItem >= 4)
 	{
 		gameState = "menu";
 		clearScreen();
@@ -1126,6 +1135,8 @@ void printHelp()
 	std::wcout << "That is why you have the option to press space, and try to get the Gremlin off that key. To skip the letter,           \n";
 	std::wcout << "you must type three 5-letter words starting with the letter of the key that you are targeting. If you do this          \n";
 	std::wcout << "succesfully, the Gremlin will move to another key. If you don't, the Gremlin will still move but you will be damaged.  \n";
+	std::wcout << "If you unintentionally do this or change your mind, you can press Space again to close the menu, but have the letter   \n";
+	std::wcout << "added to your word.                                                                                                    \n";
 	std::wcout << "                                                                                                                       \n";
 	std::wcout << "---BAIT----------------------------------------------------------------------------------------------------------------\n";
 	std::wcout << "You start the game with 3 pieces of bait. By holding SHIFT and pressing a key, you place bait on that key. This won't  \n";
@@ -1135,7 +1146,6 @@ void printHelp()
 	std::wcout << "Throughout the game, you will gain coins. You get coins from using letters, and you get more depending on how rare the \n";
 	std::wcout << "letter is. If you succesfully type out a valid word, you will win the round and be taken to the store. There, you can  \n";
 	std::wcout << "buy upgrades that will be active until you die. Once you die, all of your stats are reset to the default.              \n";
-	std::wcout << "                                                                                                                       \n";
 	std::wcout << "                                                                                                                       \n";
 	std::wcout << "                                                                                                                       \n";
 	std::wcout << "Press Space to return to the menu.                                                                                     \n";
@@ -1160,4 +1170,15 @@ void cinematicWrite(std::wstring text, int xLeft, int startY)
 		}
 		waitMilliseconds(20);
 	}
+}
+
+void hideCursor() 
+{
+	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+
+	CONSOLE_CURSOR_INFO cursorInfo;
+	GetConsoleCursorInfo(hConsole, &cursorInfo);
+
+	cursorInfo.bVisible = FALSE;
+	SetConsoleCursorInfo(hConsole, &cursorInfo);
 }
